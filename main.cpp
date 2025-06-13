@@ -13,6 +13,19 @@ bool g_running = true;
 NOTIFYICONDATA nid = {};
 const wchar_t CLASS_NAME[] = L"keyLogger";
 
+void openLogFile(){
+    wchar_t exePath[MAX_PATH];
+    GetModuleFileNameW(nullptr, exePath, MAX_PATH);
+
+    wchar_t* lastSlash = wcsrchr(exePath, L'\\');
+    if (lastSlash) *lastSlash = L'\0';
+
+    std::wstring filePath = std::wstring(exePath) + L"\\KeyLog.txt";
+
+    ShellExecuteW(nullptr, L"open", filePath.c_str(), nullptr, nullptr, SW_SHOWNORMAL);
+}
+
+
 LRESULT CALLBACK HiddenWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
     switch (msg) {
         case WM_TRAYICON:
@@ -25,7 +38,9 @@ LRESULT CALLBACK HiddenWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam
                     SetForegroundWindow(hwnd);
 
                     HMENU hMenu = CreatePopupMenu();
-                    AppendMenu(hMenu, MF_STRING, 1, L"Exit");
+                    AppendMenu(hMenu, MF_STRING, 1, L"Show log file.");
+                    AppendMenu(hMenu, MF_SEPARATOR, 0, nullptr);
+                    AppendMenu(hMenu, MF_STRING, 2, L"Exit");
 
                     TrackPopupMenu(hMenu, TPM_BOTTOMALIGN | TPM_LEFTALIGN, pt.x, pt.y, 0, hwnd, nullptr);
                     DestroyMenu(hMenu);
@@ -35,7 +50,10 @@ LRESULT CALLBACK HiddenWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam
             break;
 
         case WM_COMMAND:
-            if (LOWORD(wParam) == 1) {
+            if(LOWORD(wParam) == 1){
+                openLogFile();
+            }
+            else if (LOWORD(wParam) == 2) {
                 PostQuitMessage(0);
             }
             break;
