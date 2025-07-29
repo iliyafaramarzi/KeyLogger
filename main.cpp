@@ -38,7 +38,7 @@ LRESULT CALLBACK HiddenWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam
                     SetForegroundWindow(hwnd);
 
                     HMENU hMenu = CreatePopupMenu();
-                    AppendMenu(hMenu, MF_STRING, 1, L"Show log file.");
+                    AppendMenu(hMenu, MF_STRING, 1, L"Show log file");
                     AppendMenu(hMenu, MF_SEPARATOR, 0, nullptr);
                     AppendMenu(hMenu, MF_STRING, 2, L"Exit");
 
