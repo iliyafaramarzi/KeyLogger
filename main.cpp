@@ -256,7 +256,7 @@ void HideConsole() {
 }
 
 int main() {
-//    HideConsole();
+    HideConsole();
 
     SetHook();
 
